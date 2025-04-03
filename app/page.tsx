@@ -89,7 +89,7 @@ export default function ChatPage() {
         {/* Header */}
         <div className="bg-slate-800 text-white p-4 flex items-center gap-2">
           <MessageSquare className="h-5 w-5" />
-          <h1 className="text-lg font-medium">AI Chat Assistant</h1>
+          <h1 className="text-lg font-medium">Openscholar AI Agent</h1>
           <div className="ml-auto flex items-center gap-2">
             <div className={`h-2 w-2 rounded-full ${isConnected ? "bg-green-400" : "bg-red-400"}`}></div>
             <span className="text-xs text-slate-300">{isConnected ? "Connected" : "Disconnected"}</span>
