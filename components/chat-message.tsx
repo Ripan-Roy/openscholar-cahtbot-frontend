@@ -67,7 +67,7 @@ export function ChatMessage({ message, isLast }: ChatMessageProps) {
                         {children}
                       </a>
                     ),
-                    code: ({ node, inline, children, ...props }) => (
+                    code: ({ node, inline, children, ...props }: { node?: any; inline?: boolean; children?: React.ReactNode; [prop: string]: any }) => (
                       <code className="bg-slate-100 px-1 py-0.5 rounded text-sm text-slate-800" {...props}>
                         {children}
                       </code>

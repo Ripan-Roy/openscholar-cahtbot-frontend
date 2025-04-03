@@ -58,7 +58,7 @@ export function ToolResponse({ toolResponse, isOpen, onToggle }: ToolResponsePro
                     li: ({ node, children, ...props }) => (
                       <li className="mb-1" {...props}>{children}</li>
                     ),
-                    code: ({ node, inline, children, ...props }) => (
+                    code: ({ node, inline, children, ...props }: { node?: any; inline?: boolean; children?: React.ReactNode; [prop: string]: any }) => (
                       inline ? 
                       <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-800" {...props}>{children}</code> :
                       <code className="block" {...props}>{children}</code>
