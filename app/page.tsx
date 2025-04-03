@@ -23,7 +23,8 @@ export default function ChatPage() {
   const [isConnected, setIsConnected] = useState(false)
 
   useEffect(() => {
-    ws.current = new WebSocket(`wss://chat.dpu.openscholar.in/ws/chat/room1`)
+    const randomRoomId = Math.floor(Math.random() * 1000000);
+    ws.current = new WebSocket(`wss://chat.dpu.openscholar.in/ws/chat/${randomRoomId}`)
 
     ws.current.onopen = () => {
       console.log("Connected to server")
