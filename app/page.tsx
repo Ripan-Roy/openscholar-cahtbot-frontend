@@ -1,103 +1,133 @@
-import Image from "next/image";
+"use client"
 
-export default function Home() {
+import { useState, useEffect, useRef } from "react"
+import { motion, AnimatePresence } from "framer-motion"
+import { ChatMessage } from "@/components/chat-message"
+import { ChatInput } from "@/components/chat-input"
+import { ToolResponse } from "@/components/tool-response"
+import { MessageSquare } from "lucide-react"
+
+export default function ChatPage() {
+  const [messages, setMessages] = useState<
+    Array<{
+      sender: "user" | "bot"
+      text: string
+      final: boolean
+    }>
+  >([])
+  const [input, setInput] = useState("")
+  const [toolResponse, setToolResponse] = useState("")
+  const [thinkingOpen, setThinkingOpen] = useState(true)
+  const ws = useRef<WebSocket | null>(null)
+  const latestMsgRef = useRef<HTMLDivElement | null>(null)
+  const [isConnected, setIsConnected] = useState(false)
+
+  useEffect(() => {
+    ws.current = new WebSocket(`wss://chat.dpu.openscholar.in/ws/chat/room1`)
+
+    ws.current.onopen = () => {
+      console.log("Connected to server")
+      setIsConnected(true)
+    }
+
+    ws.current.onmessage = (event) => {
+      try {
+        const { response, type } = JSON.parse(event.data)
+
+        if (type === "text") {
+          // Process the received text by properly converting escaped newlines to actual newlines
+          const processedText = response.replace(/\\n/g, "\n");
+          
+          setMessages((prev) => {
+            const last = prev[prev.length - 1]
+            if (last && last.sender === "bot" && !last.final) {
+              const updated = [...prev]
+              updated[updated.length - 1] = {
+                ...last,
+                text: processedText,
+                final: false,
+              }
+              return updated
+            } else {
+              return [...prev, { sender: "bot", text: processedText, final: false }]
+            }
+          })
+        } else if (type === "tool") {
+          // Also process tool responses to handle escaped newlines
+          const processedToolResponse = response.replace(/\\n/g, "\n");
+          setToolResponse((prev) => prev + processedToolResponse)
+        }
+      } catch (err) {
+        console.error("WebSocket message parse error:", err)
+      }
+    }
+
+    ws.current.onclose = () => {
+      console.log("WebSocket disconnected")
+      setIsConnected(false)
+    }
+
+    return () => {
+      ws.current?.close()
+    }
+  }, [])
+
+  useEffect(() => {
+    latestMsgRef.current?.scrollIntoView({ behavior: "smooth" })
+  }, [messages])
+
+  const sendMessage = () => {
+    if (!input.trim()) return
+    setMessages((prev) => [...prev, { sender: "user", text: input, final: true }])
+    ws.current?.send(JSON.stringify({ message: input }))
+    setInput("")
+  }
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4">
+      <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg flex flex-col overflow-hidden border border-slate-200">
+        {/* Header */}
+        <div className="bg-slate-800 text-white p-4 flex items-center gap-2">
+          <MessageSquare className="h-5 w-5" />
+          <h1 className="text-lg font-medium">AI Chat Assistant</h1>
+          <div className="ml-auto flex items-center gap-2">
+            <div className={`h-2 w-2 rounded-full ${isConnected ? "bg-green-400" : "bg-red-400"}`}></div>
+            <span className="text-xs text-slate-300">{isConnected ? "Connected" : "Disconnected"}</span>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+
+        {/* Tool Response */}
+        {toolResponse && (
+          <ToolResponse
+            toolResponse={toolResponse}
+            isOpen={thinkingOpen}
+            onToggle={() => setThinkingOpen((prev) => !prev)}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        )}
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 h-[400px] bg-slate-50">
+          <AnimatePresence initial={false}>
+            {messages.length === 0 ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 0.7 }}
+                className="flex flex-col items-center justify-center h-full text-slate-400 text-sm"
+              >
+                <MessageSquare className="h-12 w-12 mb-2 opacity-20" />
+                <p>No messages yet. Start a conversation!</p>
+              </motion.div>
+            ) : (
+              messages.map((msg, idx) => <ChatMessage key={idx} message={msg} isLast={idx === messages.length - 1} />)
+            )}
+          </AnimatePresence>
+          <div ref={latestMsgRef} />
+        </div>
+
+        {/* Input Area */}
+        <ChatInput input={input} setInput={setInput} sendMessage={sendMessage} isConnected={isConnected} />
+      </div>
     </div>
-  );
+  )
 }
+
