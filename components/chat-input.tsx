@@ -4,6 +4,8 @@ import type { KeyboardEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Send } from "lucide-react"
+import { useRef } from "react"
+import { Textarea } from "@/components/ui/textarea"
 
 interface ChatInputProps {
   input: string
@@ -13,8 +15,11 @@ interface ChatInputProps {
 }
 
 export function ChatInput({ input, setInput, sendMessage, isConnected }: ChatInputProps) {
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
       sendMessage()
     }
   }
@@ -22,13 +27,13 @@ export function ChatInput({ input, setInput, sendMessage, isConnected }: ChatInp
   return (
     <div className="border-t border-slate-200 p-4 bg-white">
       <div className="flex gap-2 items-center">
-        <Input
-          type="text"
+        <Textarea
+          ref={textareaRef}
           placeholder="Type your message..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          className="flex-1 focus-visible:ring-blue-500"
+          className="flex-1 min-h-[40px] max-h-[200px] focus-visible:ring-blue-500 resize-none overflow-y-auto"
           disabled={!isConnected}
         />
         <Button
